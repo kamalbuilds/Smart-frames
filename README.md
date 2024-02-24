@@ -13,7 +13,7 @@ Description: Smart Frames is a pioneering platform designed to revolutionize the
 - **Farcaster Integration**: With `farcaster.ts`, interact with the Farcaster network for decentralized social media integration, expanding the scope of your application's functionalities.
 - **NFT Support**: The `nft.ts` module enables easy minting and management of NFTs, integrating seamlessly with your AA Frames for a richer user experience.
 - **Solidity Smart Contract**: `SafeFramesDrop.sol` is a ready-to-use ERC721 smart contract, allowing you to jumpstart your project with a solid foundation.
-- **Comprehensive APIs**: Our API routes cover various functionalities, including choice, minting, and wallet creation, to cater to diverse blockchain application needs.
+- **Frame interoperable with the Open Frames Standard**: thereby extending to support a broader range of applications and protocols.
 
 ## Getting Started
 
