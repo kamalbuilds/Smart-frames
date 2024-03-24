@@ -14,6 +14,7 @@ export enum FrameImageUrls {
     SUCCESS = 'https://smartframes.vercel.app/success.png',
     ERROR = 'https://smartframes.vercel.app/error.png',
     CHOICE = 'https://smartframes.vercel.app/choice.png',
+    SOLVSEVM = 'https://smartframes.vercel.app/solvsevm.png',
 }
 
 export const createFrame = (imageUrl: string, buttonText: string, apiPath: string, isRedirect = false) => {

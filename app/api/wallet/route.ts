@@ -30,7 +30,7 @@ export async function POST(req: NextRequest): Promise<Response> {
         console.log("dynamic embedded wallet");
         //@ts-ignore
         const embeddedWalletAddress = await createOrFindEmbeddedWalletForFid(frameRequest.untrustedData.fid, ownerAddress,"dynamic", frameRequest.untrustedData.inputText);
-        return new NextResponse(choosewallet(FrameImageUrls.START, embeddedWalletAddress[0],embeddedWalletAddress[1], "api/solvsevm" ));
+        return new NextResponse(choosewallet(FrameImageUrls.SOLVSEVM, embeddedWalletAddress[0],embeddedWalletAddress[1], "api/solvsevm" ));
     }
 
     const embeddedWalletAddress = await createOrFindEmbeddedWalletForFid(frameRequest.untrustedData.fid, ownerAddress,"privy");
