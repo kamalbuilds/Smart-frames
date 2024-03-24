@@ -31,7 +31,7 @@ export const createFrame = (imageUrl: string, buttonText: string, apiPath: strin
 }
 
 
-export const dynamicEmbeddedFrame = (imageUrl: string, buttonText: string, apiPath: string, emailInputPlaceholder: string = "Enter a valid email") => {
+export const dynamicEmbeddedFrame = (imageUrl: string, buttonText: string, apiPath: string, emailInputPlaceholder: string) => {
     return (`
         <!DOCTYPE html>
         <html>
@@ -48,6 +48,22 @@ export const dynamicEmbeddedFrame = (imageUrl: string, buttonText: string, apiPa
         </html>
     `);
 };
+
+export const choosewallet = (imageUrl: string, button1Text: string,button2Text: string, apiPath: string, isRedirect = false) => {
+    return (`
+        <!DOCTYPE html>
+        <html>
+            <head>
+            <meta name="fc:frame" content="vNext">
+            <meta name="fc:frame:image" content="${imageUrl}">
+            <meta name="fc:frame:post_url" content="${FRAME_BASE_URL}/${apiPath}">
+            <meta name="fc:frame:button:1" content="${button1Text}">
+            <meta name="fc:frame:button:2" content="${button2Text}">
+            <meta name="fc:frame:button:1:action" content="${isRedirect ? 'post_redirect' : 'post'}">
+            </head>
+        </html>`);
+}
+
 export const createWalletFrame = (address: string) => {
     return createFrame(FrameImageUrls.WALLET, 'Mint your NFT', `api/mint/${address}`)
 }
@@ -57,36 +73,45 @@ export const dynamicFrameWithEmailInput = dynamicEmbeddedFrame(
     FrameImageUrls.CHOICE,
     'Create SOL + EVM Embedded Wallets',
     'api/wallet',
-    'Enter your email to generate a wallet'
+    'Enter your email'
 );
 
-export  const PrivyFrame = createFrame(FrameImageUrls.START, 'Create a wallet', 'api/wallet');
+export const PrivyFrame = createFrame(FrameImageUrls.START, 'Create a wallet', 'api/wallet');
 export const successFrame = createFrame(FrameImageUrls.SUCCESS, 'Done', 'api/done', true);
 export const errorFrame = createFrame(FrameImageUrls.ERROR, 'Try again?', 'api/wallet');
 
+// Enhanced parseFrameRequest with retry logic
 export const parseFrameRequest = async (request: FrameRequest) => {
     const hub = getSSLHubRpcClient(HUB_URL);
+    let retryCount = 0;
+    const maxRetries = 6; // Set the maximum number of retries
     let fid: number | undefined;
-    let isValid: boolean = true;
+    let isValid = false;
 
-
-    try {
-        const decodedMessage = Message.decode(
-            Buffer.from(request.trustedData.messageBytes, "hex")
-        );
-        const result = await hub.validateMessage(decodedMessage);
-        if (!result.isOk() || !result.value.valid || !result.value.message) {
-            isValid = false;
-        } else {
-            console.log(result.value,"result value")
-            fid = result.value.message.data?.fid;
+    while (retryCount < maxRetries && !isValid) {
+        try {
+            const decodedMessage = Message.decode(Buffer.from(request.trustedData.messageBytes, "hex"));
+            const result = await hub.validateMessage(decodedMessage);
+            console.log(result,"result");
+            if (!result.isOk() || !result.value.valid || !result.value.message) {
+                throw new Error('Validation failed');
+            } else {
+                fid = result.value.message.data?.fid;
+                console.log(fid,"fid")
+                isValid = true; // Break out of the loop on success
+            }
+        } catch (error) {
+            console.error(`Attempt ${retryCount + 1} failed:`, error);
+            retryCount++;
+            if (retryCount >= maxRetries) {
+                console.error("Max retries reached, failing with error.");
+                break; // Exit loop after max retries
+            }
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
         }
-    } catch (error) {
-        console.error(error)
     }
-
-    return {fid: fid, isValid: isValid};
-}
+    return { fid, isValid };
+};
 
 export const getOwnerAddressFromFid = async (fid: number) => {
     let ownerAddress: `0x${string}` | undefined;

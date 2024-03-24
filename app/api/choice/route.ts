@@ -1,4 +1,4 @@
-import { FRAME_BASE_URL, FrameImageUrls, PrivyFrame, createFrame, errorFrame, parseFrameRequest } from '@/lib/farcaster';
+import { FRAME_BASE_URL, FrameImageUrls, PrivyFrame, createFrame, dynamicFrameWithEmailInput, errorFrame, parseFrameRequest } from '@/lib/farcaster';
 import { FrameRequest, getFrameMetadata } from '@coinbase/onchainkit';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -18,6 +18,13 @@ export async function POST(req: NextRequest): Promise<Response> {
     }
     const {fid, isValid} = await parseFrameRequest(frameRequest);
     if (!fid || !isValid) return new NextResponse(errorFrame);
+
+    if(frameRequest.untrustedData.buttonIndex == 1) {
+        return new NextResponse(createFrame(FrameImageUrls.START, 'Create a wallet', 'api/wallet'));
+    }
+    else if(frameRequest.untrustedData.buttonIndex == 2) {
+        return new NextResponse(dynamicFrameWithEmailInput);
+    }
 
     return new NextResponse(createFrame(FrameImageUrls.START, 'Create a wallet', 'api/wallet'));
 }

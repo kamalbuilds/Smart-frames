@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import axios, { AxiosRequestConfig } from 'axios';
 import { NextResponse } from 'next/server';
 import { ChainEnum } from '@dynamic-labs/sdk-api';
@@ -9,7 +9,6 @@ const PRIVY_API_URL = process.env.PRIVY_API_URL || 'https://auth.privy.io/api/v1
 
 
 // Dynamic.xyz configuration
-const DYNAMIC_API_URL = 'https://app.dynamic.xyz/api/v0'; // Adjust if there are environment-specific URLs
 const DYNAMIC_ENVIRONMENT_ID = process.env.ENVIRONMENT_ID;
 const DYNAMIC_KEY = process.env.KEY;
 
@@ -29,13 +28,15 @@ const config: AxiosRequestConfig = {
     }
 }
 
-export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress: string , walletProvider: string) => {
-
+export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress: string , walletProvider: string, email? : string) => {
+    console.log("here");
     let newWalletAddresses: string[] = [];
 
     switch (walletProvider) {
         case 'privy':
-            const {address, conflictingDid}  = await createEmbeddedWalletForFid(fid, ownerAddress); // Assuming this is already defined
+            const {address, conflictingDid}  = await createEmbeddedWalletForFid(fid, ownerAddress);
+
+            console.log(address,"address");
             if (address) newWalletAddresses.push(address);
 
             // If no conflicting DID was found for the user, it is an unrecoverable error
@@ -53,21 +54,24 @@ export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress
 
         case 'dynamic':
             // Dynamic.xyz wallet creation logic
-            const dynamicWalletCreationUrl = `${DYNAMIC_API_URL}/environments/${DYNAMIC_ENVIRONMENT_ID}/embeddedWallets/farcaster`;
+            console.log("Creating embedded wallets for", email, fid);
+            const dynamicWalletCreationUrl = `https://app.dynamicauth.com/api/v0/environments/${DYNAMIC_ENVIRONMENT_ID}/embeddedWallets/farcaster`;
             try {
                 const response = await fetch(dynamicWalletCreationUrl, {
                     ...dynamicConfig,
                     body: JSON.stringify({
                         email,
                         fid,
-                        chains: [ChainEnum.Sol, ChainEnum.Evm], // Example chains, adjust as needed
+                        chains: [ChainEnum.Sol, ChainEnum.Evm],
                     }),
                 });
                 const data = await response.json();
-                newWalletAddresses = data.user.wallets.map(wallet => wallet.publicKey);
+                console.log(data,"data")
+                // @ts-ignore
+                newWalletAddresses = data.user.wallets.map( (wallet: any) => wallet.publicKey);
             } catch (error) {
                 console.error("Dynamic.xyz wallet creation failed:", error);
-                throw error; // Rethrow or handle as appropriate
+                throw error;
             }
             break;
 
@@ -75,6 +79,7 @@ export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress
             throw new Error("Invalid wallet provider selected");
     }
 
+    console.log(newWalletAddresses, "newWalletAddresses");
     return newWalletAddresses;
 }
 
