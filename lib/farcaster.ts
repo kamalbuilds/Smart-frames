@@ -15,6 +15,7 @@ export enum FrameImageUrls {
     ERROR = 'https://smartframes.vercel.app/error.png',
     CHOICE = 'https://smartframes.vercel.app/choice.png',
     SOLVSEVM = 'https://smartframes.vercel.app/solvsevm.png',
+    EMAIL = 'https://smartframes.vercel.app/email.png',
 }
 
 export const createFrame = (imageUrl: string, buttonText: string, apiPath: string, isRedirect = false) => {
@@ -71,7 +72,7 @@ export const createWalletFrame = (address: string) => {
 
 // Example usage
 export const dynamicFrameWithEmailInput = dynamicEmbeddedFrame(
-    FrameImageUrls.CHOICE,
+    FrameImageUrls.EMAIL,
     'Create SOL + EVM Embedded Wallets',
     'api/wallet',
     'Enter your email'
