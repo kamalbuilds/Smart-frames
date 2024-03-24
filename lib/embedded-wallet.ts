@@ -1,9 +1,26 @@
+// @ts-nocheck
 import axios, { AxiosRequestConfig } from 'axios';
 import { NextResponse } from 'next/server';
+import { ChainEnum } from '@dynamic-labs/sdk-api';
 
 const PRIVY_APP_ID = process.env.PRIVY_APP_ID;
 const PRIVY_APP_SECRET = process.env.PRIVY_APP_SECRET;
 const PRIVY_API_URL = process.env.PRIVY_API_URL || 'https://auth.privy.io/api/v1';
+
+
+// Dynamic.xyz configuration
+const DYNAMIC_API_URL = 'https://app.dynamic.xyz/api/v0'; // Adjust if there are environment-specific URLs
+const DYNAMIC_ENVIRONMENT_ID = process.env.ENVIRONMENT_ID;
+const DYNAMIC_KEY = process.env.KEY;
+
+// Config for axios or fetch headers for Dynamic
+const dynamicConfig = {
+    method: "POST",
+    headers: {
+        'Authorization': `Bearer ${DYNAMIC_KEY}`,
+        'Content-Type': 'application/json',
+    },
+};
 
 const config: AxiosRequestConfig = {
     headers: {
@@ -12,20 +29,53 @@ const config: AxiosRequestConfig = {
     }
 }
 
-export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress: string) => {
-    const {address, conflictingDid} = await createEmbeddedWalletForFid(fid, ownerAddress);
-    if (address) return address;
+export const createOrFindEmbeddedWalletForFid = async (fid: number, ownerAddress: string , walletProvider: string) => {
 
-    // If no conflicting DID was found for the user, it is an unrecoverable error
-    if (!conflictingDid) return undefined;
+    let newWalletAddresses: string[] = [];
 
-    // If a conflicting DID was found, check if they have an embedded wallet already
-    const existingAddress = await findExistingEmbeddedWalletForDid(conflictingDid);
-    if (existingAddress) return existingAddress;
+    switch (walletProvider) {
+        case 'privy':
+            const {address, conflictingDid}  = await createEmbeddedWalletForFid(fid, ownerAddress); // Assuming this is already defined
+            if (address) newWalletAddresses.push(address);
 
-    // If no existing embedded wallet, delete the user and recreate it with an embedded wallet
-    const newAddress = await deleteAndCreateUserWithEmbeddedWallet(conflictingDid, fid, ownerAddress);
-    return newAddress;
+            // If no conflicting DID was found for the user, it is an unrecoverable error
+            if (!conflictingDid) return undefined;
+        
+            // If a conflicting DID was found, check if they have an embedded wallet already
+            const existingAddress = await findExistingEmbeddedWalletForDid(conflictingDid);
+            if (existingAddress) return existingAddress;
+        
+            // If no existing embedded wallet, delete the user and recreate it with an embedded wallet
+            const newAddress = await deleteAndCreateUserWithEmbeddedWallet(conflictingDid, fid, ownerAddress);
+            if (newAddress) newWalletAddresses.push(newAddress);
+
+            break;
+
+        case 'dynamic':
+            // Dynamic.xyz wallet creation logic
+            const dynamicWalletCreationUrl = `${DYNAMIC_API_URL}/environments/${DYNAMIC_ENVIRONMENT_ID}/embeddedWallets/farcaster`;
+            try {
+                const response = await fetch(dynamicWalletCreationUrl, {
+                    ...dynamicConfig,
+                    body: JSON.stringify({
+                        email,
+                        fid,
+                        chains: [ChainEnum.Sol, ChainEnum.Evm], // Example chains, adjust as needed
+                    }),
+                });
+                const data = await response.json();
+                newWalletAddresses = data.user.wallets.map(wallet => wallet.publicKey);
+            } catch (error) {
+                console.error("Dynamic.xyz wallet creation failed:", error);
+                throw error; // Rethrow or handle as appropriate
+            }
+            break;
+
+        default:
+            throw new Error("Invalid wallet provider selected");
+    }
+
+    return newWalletAddresses;
 }
 
 const createEmbeddedWalletForFid = async (fid: number, ownerAddress: string) => {

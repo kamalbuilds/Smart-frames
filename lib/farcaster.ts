@@ -9,10 +9,11 @@ const ZERO_ADDRESS: `0x${string}` = '0x0000000000000000000000000000000000000000'
 const HUB_URL = 'nemes.farcaster.xyz:2283';
 
 export enum FrameImageUrls {
-    START = 'https://privy-frames-demo.vercel.app/landing.png',
-    WALLET = 'https://privy-frames-demo.vercel.app/wallet.png',
-    SUCCESS = 'https://privy-frames-demo.vercel.app/success.png',
-    ERROR = 'https://privy-frames-demo.vercel.app/error.png'
+    START = 'https://smartframes.vercel.app/landing.png',
+    WALLET = 'https://smartframes.vercel.app/wallet.png',
+    SUCCESS = 'https://smartframes.vercel.app/success.png',
+    ERROR = 'https://smartframes.vercel.app/error.png',
+    CHOICE = 'https://smartframes.vercel.app/choice.png',
 }
 
 export const createFrame = (imageUrl: string, buttonText: string, apiPath: string, isRedirect = false) => {
@@ -29,10 +30,37 @@ export const createFrame = (imageUrl: string, buttonText: string, apiPath: strin
         </html>`);
 }
 
+
+export const dynamicEmbeddedFrame = (imageUrl: string, buttonText: string, apiPath: string, emailInputPlaceholder: string = "Enter a valid email") => {
+    return (`
+        <!DOCTYPE html>
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta name="fc:frame" content="vNext">
+                <meta name="fc:frame:image" content="${imageUrl}">
+                <meta name="fc:frame:post_url" content="${FRAME_BASE_URL}/${apiPath}">
+                <meta name="fc:frame:input:text" content="${emailInputPlaceholder}">
+                <meta name="fc:frame:button:1" content="${buttonText}">
+                <meta name="fc:frame:button:1:action" content="post">
+            </head>
+        </html>
+    `);
+};
 export const createWalletFrame = (address: string) => {
     return createFrame(FrameImageUrls.WALLET, 'Mint your NFT', `api/mint/${address}`)
 }
 
+// Example usage
+export const dynamicFrameWithEmailInput = dynamicEmbeddedFrame(
+    FrameImageUrls.CHOICE,
+    'Create SOL + EVM Embedded Wallets',
+    'api/wallet',
+    'Enter your email to generate a wallet'
+);
+
+export  const PrivyFrame = createFrame(FrameImageUrls.START, 'Create a wallet', 'api/wallet');
 export const successFrame = createFrame(FrameImageUrls.SUCCESS, 'Done', 'api/done', true);
 export const errorFrame = createFrame(FrameImageUrls.ERROR, 'Try again?', 'api/wallet');
 
@@ -40,6 +68,7 @@ export const parseFrameRequest = async (request: FrameRequest) => {
     const hub = getSSLHubRpcClient(HUB_URL);
     let fid: number | undefined;
     let isValid: boolean = true;
+
 
     try {
         const decodedMessage = Message.decode(
@@ -49,6 +78,7 @@ export const parseFrameRequest = async (request: FrameRequest) => {
         if (!result.isOk() || !result.value.valid || !result.value.message) {
             isValid = false;
         } else {
+            console.log(result.value,"result value")
             fid = result.value.message.data?.fid;
         }
     } catch (error) {

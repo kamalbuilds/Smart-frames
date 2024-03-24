@@ -4,11 +4,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createOrFindEmbeddedWalletForFid } from '@/lib/embedded-wallet';
 
 export async function POST(req: NextRequest): Promise<Response> {
+
+    // When a user interacts with your Frame, you receive a JSON message called the "Frame Signature Packet". 
+    // Decode and validate this message using the getFrameMessage function.
     let frameRequest: FrameRequest | undefined;
 
+    console.log(frameRequest,"frame req");
     // Parse and validate request from Frame for fid
     try {
         frameRequest = await req.json();
+        console.log(frameRequest,"frame req");
         if (!frameRequest) throw new Error('Could not deserialize request from frame');
     } catch {
         return new NextResponse(errorFrame);
@@ -21,7 +26,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (!ownerAddress) return new NextResponse(errorFrame);
 
     // Generate an embedded wallet associated with the fid
-    const embeddedWalletAddress = await createOrFindEmbeddedWalletForFid(fid, ownerAddress);
+    const embeddedWalletAddress = await createOrFindEmbeddedWalletForFid(fid, ownerAddress,"privy");
     if (!embeddedWalletAddress) return new NextResponse(errorFrame);
 
     return new NextResponse(createWalletFrame(embeddedWalletAddress));
